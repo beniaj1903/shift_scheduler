@@ -1,23 +1,56 @@
-import logo from './logo.svg';
-import './App.css';
+// IMPORTS
 
-function App() {
+// external
+import React, { useState, useEffect } from 'react'
+
+// project
+import './Apps.css';
+import { apiGet } from './Utils/ApiFetch'
+
+// END IMPORTS
+
+const hostUrl = process.env
+
+/*
+
+  name: App
+
+  Main container of the MVP, contents the state management and the inner components
+
+*/
+
+const App = () => {
+  // Init
+  const initialState = {
+    viewState: {
+      employees: [],
+      shifts: [],
+      services: [],
+      weeks: [],
+    },
+    controls: {
+      weekId: '',
+      serviceId: '',
+      shiftId: '',
+    }
+  };
+
+  const [state, setstate] = useState(initialState);
+  const [response, setResponse] = useState({});
+
+  // Did Mount
+  useEffect(() => {
+    setResponse(apiGet(hostUrl, {}))
+  }, []);
+
+  useEffect(() => {
+    
+  }, []);
+
   return (
+
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+
     </div>
   );
 }
