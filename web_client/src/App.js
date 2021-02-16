@@ -9,8 +9,6 @@ import { apiGet } from './Utils/ApiFetch'
 
 // END IMPORTS
 
-const hostUrl = process.env
-
 /*
 
   name: App
@@ -35,12 +33,16 @@ const App = () => {
     }
   };
 
-  const [state, setstate] = useState(initialState);
-  const [response, setResponse] = useState({});
+  const [state, setState] = useState(initialState);
 
   // Did Mount
   useEffect(() => {
-    setResponse(apiGet(hostUrl, {}))
+    const response = apiGet('shifts', {});
+    if (response.status && response.status < 300) {
+      setState({ viewState: response.viewState });
+    } else {
+      setError({ error: response.error });
+    }
   }, []);
 
   useEffect(() => {
