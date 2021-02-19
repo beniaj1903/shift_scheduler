@@ -21,4 +21,18 @@ Things you may want to cover:
 
 * Deployment instructions
 
-* ...
+
+## Front Init
+
+* To install dependencies  do
+
+```
+yarn install
+```
+
+* To start the front end server
+```
+yarns start
+```
+
+* To access the app go to http://localhost:8080
