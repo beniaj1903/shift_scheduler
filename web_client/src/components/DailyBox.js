@@ -23,10 +23,12 @@ const DailyBox = props => {
 
     // Init
     const {
+        handleEmployeeCheckboxChange,
         handleCheckboxChange,
         availabilities,
         checkboxMode,
         employees,
+        shiftIds,
         rows,
         day
     } = props;
@@ -44,9 +46,17 @@ const DailyBox = props => {
                     <TableRow>
                         <TableCell align="center" colSpan={checkboxMode ? 1 : 2}>{day}</TableCell>
                         {checkboxMode &&
-                            employees.map(employee => <TableCell colSpan={1} align="center" key={employee.id}>
-                                {employee.name}
-                            </TableCell>)}
+                            employees.map(employee => {
+                                const employeeAvailabilities = availabilities.filter(sa => sa.employee_id === employee.id);
+                                const allChecked = employeeAvailabilities.length === shiftIds.length;
+                                return <TableCell colSpan={1} align="center" key={employee.id}>
+                                    <Checkbox
+                                        checked={Boolean(allChecked)}
+                                        onChange={() => handleEmployeeCheckboxChange(employee.id, shiftIds, !Boolean(allChecked))}
+                                    />
+                                    {employee.name}
+                                </TableCell>
+                            })}
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -56,13 +66,13 @@ const DailyBox = props => {
                             {
                                 checkboxMode ?
                                     employees.map(employee => {
-                                    const checked = availabilities.find(av => av.employee_id === employee.id && av.shift_id === row.id);
-                                    return <TableCell key={employee.id}>
-                                        <Checkbox
-                                            checked={Boolean(checked)}
-                                            onChange={() => handleCheckboxChange(employee.id, row.id, !Boolean(checked))}
-                                        />
-                                    </TableCell>
+                                        const checked = availabilities.find(av => av.employee_id === employee.id && av.shift_id === row.id);
+                                        return <TableCell key={employee.id}>
+                                            <Checkbox
+                                                checked={Boolean(checked)}
+                                                onChange={() => handleCheckboxChange(employee.id, row.id, !Boolean(checked))}
+                                            />
+                                        </TableCell>
                                     })
                                     : <TableCell align="center">{
                                         row.employee === '' ? <Warning /> : row.employee

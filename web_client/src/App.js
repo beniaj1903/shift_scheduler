@@ -66,18 +66,28 @@ const App = () => {
     weeks,
   } = state.viewState;
 
-  function handleCheckboxChange(employee_id, row_id, checked) {
-    console.log('employee_id', employee_id)
-    console.log('row_id', row_id)
-    console.log('checked', checked)
-    const new_availabilities = checked ?
-      [...state.controls.availabilities, { employee_id: employee_id, shift_id: row_id }] :
-      state.controls.availabilities.filter(av => !(av.employee_id === employee_id && av.shift_id === row_id));
+  function handleEmployeeCheckboxChange(employeeId, shiftIds, checked) {
+    const newEmployeeShiftAvailabilities = shiftIds.map(id => ({ employee_id: employeeId, shift_id: id }));
+    const newAvailabilities = checked ?
+    [...state.controls.availabilities, ...newEmployeeShiftAvailabilities] :
+    state.controls.availabilities.filter(sa => !(sa.employee_id === employeeId && shiftIds.includes(sa.shift_id)));
     setState({
       ...state,
       controls: {
         ...state.controls,
-        availabilities: new_availabilities,
+        availabilities: newAvailabilities,
+      }
+    });
+  }
+  function handleCheckboxChange(employeeId, rowId, checked) {
+    const newAvailabilities = checked ?
+      [...state.controls.availabilities, { employee_id: employeeId, shift_id: rowId }] :
+      state.controls.availabilities.filter(sa => !(sa.employee_id === employeeId && sa.shift_id === rowId));
+    setState({
+      ...state,
+      controls: {
+        ...state.controls,
+        availabilities: newAvailabilities,
       }
     });
   }
@@ -112,7 +122,7 @@ const App = () => {
         setError({ error: response.error });
       }
     } else {
-      
+
     }
     console.log('error', error)
     if (!(error.length > 0)) {
@@ -141,7 +151,7 @@ const App = () => {
       setError({ error: response.error });
     }
   }, [serviceId, weekId]);
-
+console.log('availabilities', availabilities)
   useEffect(() => {
     setState({ ...state, controls: { ...state.controls, availabilities: Object.values(shift_availabilities) } });
   }, [shift_availabilities]);
@@ -205,14 +215,17 @@ const App = () => {
         {Object.entries(days).map((entrie) => {
           const [day, value] = entrie;
           const formatedDay = getDateFromYearWeekDay(day, value[0].week, value[0].year).toDateString()
+          const shiftIds = value.map((row) => row.id);
           return <Grid key={day} item xs={3}>
             <DailyBox
               rows={value}
               day={formatedDay}
               employees={employees}
               checkboxMode={checkboxMode}
-              availabilities={availabilities}
+              availabilities={availabilities.filter(sa => shiftIds.includes(sa.shift_id))}
+              shiftIds={shiftIds}
               handleCheckboxChange={handleCheckboxChange}
+              handleEmployeeCheckboxChange={handleEmployeeCheckboxChange}
             />
           </Grid>
         })}
