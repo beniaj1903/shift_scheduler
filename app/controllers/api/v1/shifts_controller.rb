@@ -1,11 +1,22 @@
 class Api::V1::ShiftsController < Api::V1::ApiController
-    def index
-        
-        shifts = Shift.all
+    skip_before_action :verify_authenticity_token
+    
+    def index    
         weeks = Week.all
         employees = Employee.all
         services = Service.all
-        shift_availabilities = ShiftAvailability.all
+        if params[:service_id].blank?
+            service_id = Service.first
+        else
+            service_id = params[:service_id].to_i
+        end
+        if params[:week_id].blank?
+            week_id = Week.first
+        else
+            week_id = params[:week_id].to_i
+        end
+        shifts = Shift.where(service_id: service_id, week_id: week_id)
+        shift_availabilities = ShiftAvailability.where(shift_id: shifts.map(&:id))
         
         response = {
             json: {
@@ -34,6 +45,28 @@ class Api::V1::ShiftsController < Api::V1::ApiController
             response = {
                 json: {
                     shifts: ApiHelper.api_response_normalization(shifts_to_create),
+                }, status: 201
+            }
+        end
+        render response
+    end
+
+    def availabilities
+        # sa: shift_availability
+        # sas: shift_availabilities
+        sas_to_create = []
+        response = { json: { error: "No se pudieron crear turnos", status: 400 } }
+        if !params[:sas].select{ |sa| !sa.blank? }.blank?
+            params[:sas].each do |sa|
+                sas_to_create << ShiftAvailability.find_or_create_by(shift_availabilities_params(sa))
+            end
+        else
+            response = { json: { message: "empty params", status: 200 } }
+        end
+        if !sas_to_create.blank?
+            response = {
+                json: {
+                    shift_availabilities: ApiHelper.api_response_normalization(sas_to_create),
                 }, status: 201
             }
         end
@@ -93,5 +126,8 @@ class Api::V1::ShiftsController < Api::V1::ApiController
     private 
     def shift_params shift
         shift.permit(:service_id, :week_id, :day, :start_time, :end_time)
+    end
+    def shift_availabilities_params shift_availability
+        shift_availability.permit(:employee_id, :shift_id)
     end
 end
