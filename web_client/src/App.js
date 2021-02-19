@@ -69,8 +69,8 @@ const App = () => {
   function handleEmployeeCheckboxChange(employeeId, shiftIds, checked) {
     const newEmployeeShiftAvailabilities = shiftIds.map(id => ({ employee_id: employeeId, shift_id: id }));
     const newAvailabilities = checked ?
-    [...state.controls.availabilities, ...newEmployeeShiftAvailabilities] :
-    state.controls.availabilities.filter(sa => !(sa.employee_id === employeeId && shiftIds.includes(sa.shift_id)));
+      [...state.controls.availabilities, ...newEmployeeShiftAvailabilities] :
+      state.controls.availabilities.filter(sa => !(sa.employee_id === employeeId && shiftIds.includes(sa.shift_id)));
     setState({
       ...state,
       controls: {
@@ -109,26 +109,38 @@ const App = () => {
     let error = '';
     if (checkboxMode) {
       let response = await apiPost(`shifts/availabilities`, { body: { sas: availabilities } });
-      const shift_availabilities = Object.values(response.viewState.shift_availabilities)
+      console.log('Object.values(response.viewState.shift_availabilities)', Object.values(response.viewState.shift_availabilities))
+      const shift_availabilities = Object.values(response.viewState.shift_availabilities).sort((a,b) => a.employee_id < b.employee_id);
+      console.log('shift_availabilities', shift_availabilities)
+      const shift_ids = shift_availabilities.map(sa => sa.shift_id);
+      const employee_ids = shift_availabilities.map(sa => sa.employee_id);
       if (response.status && response.status < 300 && shift_availabilities.length > 0) {
-        // response = await apiPost(`shifts/distribuite`, { body:  });
-        // if (response.status && response.status < 300) {
-        // } else {
-        //   setError({ error: response.error });
-        // }
-        console.log('response', response)
+        response = await apiPost(`shifts/distribute`, { body: { shift_ids, employee_ids } });
+        console.log('response.status', response.status)
+        if (response.status && response.status < 300) {
+          setState({
+            ...state,
+            viewState: {
+              ...state.viewState,
+              shifts: response.viewState.shifts,
+            },
+            controls: {
+              ...state.controls,
+              checkboxMode: !checkboxMode
+            }
+          });
+        } else {
+          setError({ error: response.error });
+        }
       } else {
         error = response.error || response.message;
         setError({ error: response.error });
       }
     } else {
-
-    }
-    console.log('error', error)
-    if (!(error.length > 0)) {
       setState({ ...state, controls: { ...state.controls, checkboxMode: !checkboxMode } });
     }
   };
+
   // Did Mount
   useEffect(async () => {
     const response = await apiGet(`shifts`, {}, {});
@@ -151,17 +163,20 @@ const App = () => {
       setError({ error: response.error });
     }
   }, [serviceId, weekId]);
-console.log('availabilities', availabilities)
+
   useEffect(() => {
+    console.log('HEEEEEEEEEEEEEEEEREEEEEEEEEEEE', "HEEEEEEEEEEEEEEEEREEEEEEEEEEEE")
     setState({ ...state, controls: { ...state.controls, availabilities: Object.values(shift_availabilities) } });
   }, [shift_availabilities]);
+
+  console.log('state.viewState', state.viewState)
 
   const weekOptions = getOptions(Object.values(weeks).map(week => ({ ...week, name: `Semana ${week.number} del ${week.year}` })));
   const serviceOptions = getOptions(Object.values(services));
   const employees = Object.values(state.viewState.employees);
   const days = Object.values(shifts)
     .map(shift => {
-      const employee = employees[shift.employee_id] ? employees[shift.employee_id].name : '';
+      const employee = state.viewState.employees[shift.employee_id] ? state.viewState.employees[shift.employee_id].name : '';
       const week = weeks[shift.week_id];
       return ({
         ...shift,

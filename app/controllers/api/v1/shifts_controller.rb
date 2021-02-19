@@ -1,133 +1,106 @@
 class Api::V1::ShiftsController < Api::V1::ApiController
-    skip_before_action :verify_authenticity_token
-    
-    def index    
-        weeks = Week.all
-        employees = Employee.all
-        services = Service.all
-        if params[:service_id].blank?
-            service_id = Service.first
-        else
-            service_id = params[:service_id].to_i
-        end
-        if params[:week_id].blank?
-            week_id = Week.first
-        else
-            week_id = params[:week_id].to_i
-        end
-        shifts = Shift.where(service_id: service_id, week_id: week_id)
-        shift_availabilities = ShiftAvailability.where(shift_id: shifts.map(&:id))
-        
-        response = {
-            json: {
-                shifts: ApiHelper.api_response_normalization(shifts),
-                weeks: ApiHelper.api_response_normalization(weeks),
-                employees: ApiHelper.api_response_normalization(employees),
-                services: ApiHelper.api_response_normalization(services),
-                shift_availabilities: ApiHelper.api_response_normalization(shift_availabilities),
-            }, status: 200
-        }
-        render response
-    end
+  skip_before_action :verify_authenticity_token
 
-    def create
-        shifts_to_create = []
-        response = { json: { error: "No se pudieron crear turnos", status: 400 } }
-        if !params[:shifts].select{ |shift| !shift.blank? }.blank?
-            params[:shifts].each do |shift|
-                shifts_to_create << Shift.new(shift_params(shift))
-            end
-        else
-            response = { json: { message: "empty params", status: 200 } }
-        end
-        if !shifts_to_create.blank?
-            shifts_to_create.each { |shift| shift.save } 
-            response = {
-                json: {
-                    shifts: ApiHelper.api_response_normalization(shifts_to_create),
-                }, status: 201
-            }
-        end
-        render response
-    end
+  def index
+    weeks = Week.all
+    employees = Employee.all
+    services = Service.all
+    service_id = if params[:service_id].blank?
+                   Service.first
+                 else
+                   params[:service_id].to_i
+                 end
+    week_id = if params[:week_id].blank?
+                Week.first
+              else
+                params[:week_id].to_i
+              end
+    shifts = Shift.where(service_id: service_id, week_id: week_id)
+    shift_availabilities = ShiftAvailability.where(shift_id: shifts.map(&:id))
 
-    def availabilities
-        # sa: shift_availability
-        # sas: shift_availabilities
-        sas_to_create = []
-        response = { json: { error: "No se pudieron crear turnos", status: 400 } }
-        if !params[:sas].select{ |sa| !sa.blank? }.blank?
-            params[:sas].each do |sa|
-                sas_to_create << ShiftAvailability.find_or_create_by(shift_availabilities_params(sa))
-            end
-        else
-            response = { json: { message: "empty params", status: 200 } }
-        end
-        if !sas_to_create.blank?
-            response = {
-                json: {
-                    shift_availabilities: ApiHelper.api_response_normalization(sas_to_create),
-                }, status: 201
-            }
-        end
-        render response
-    end
+    response = {
+      json: {
+        shifts: ApiHelper.api_response_normalization(shifts),
+        weeks: ApiHelper.api_response_normalization(weeks),
+        employees: ApiHelper.api_response_normalization(employees),
+        services: ApiHelper.api_response_normalization(services),
+        shift_availabilities: ApiHelper.api_response_normalization(shift_availabilities)
+      }, status: 200
+    }
+    render response
+  end
 
-    def distribute
-        response = { json: { error: "No se pudieron distribuir los turnos" }, status: 400 }
-        distribuited_shifts = []
-        shift_availabilities = ShiftAvailability.where(employee_id: params[:employee_ids].map{ |id| id.to_i }, shift_id: params[:shift_ids].map{ |id| id.to_i })
-        .select("COUNT(*) as availabilities_count", "employee_id", "group_concat(CAST(shift_availabilities.shift_id AS varchar), '-') as shift_ids")
-        .group(:employee_id)
-        .order(:availabilities_count)
-        shifts = Shift.where(id: shift_availabilities.map(&:shift_ids).inject([]){|array, ids| array += ids.split('-').map{|id| id.to_i}}.uniq)
-        shifts.update(employee_id: nil)
-        max_shifts_by_employee = (shifts.count / params[:employee_ids].count).truncate
-        count_employees_hash = params[:employee_ids].inject({}) do |obj, employee_id| 
-            obj[employee_id.to_s] = 0
-            obj
-        end
-        employee_index = 0
-        shifts.each do |shift|
-            availabilities = shift_availabilities.select{ |sa| sa.shift_ids.split('-').include?(shift.id.to_s) }.map(&:employee_id)
-            if !availabilities.blank?
-                if availabilities[employee_index] && count_employees_hash[availabilities[employee_index].to_s] >= max_shifts_by_employee
-                    employee_index += 1
-                end
-                if availabilities[employee_index].blank?
-                    # fewer_id = employee_id with fewer counts of shifts
-                    fewer_id = availabilities[0].to_s
-                    # get the correct fewer_id
-                    count_employees_hash.each do |employee_id, count|
-                        if availabilities.find { |id| id == employee_id.to_i } && count_employees_hash[fewer_id] > count
-                            fewer_id = employee_id
-                        end
-                    end
-                    shift.update(employee_id: availabilities.find { |id| id == fewer_id.to_i })
-                    count_employees_hash[fewer_id] += 1
-                else
-                    shift.update(employee_id: availabilities[employee_index])
-                    count_employees_hash[availabilities[employee_index].to_s] += 1
-                end
-                distribuited_shifts << shift
-            end
-        end
-        p "distribuited_shifts.map(&:employee_id)"
-        p distribuited_shifts.map(&:employee_id)
-        p "distribuited_shifts.map(&:employee_id)"
-        response = {
-            json: {
-                shifts: ApiHelper.api_response_normalization(distribuited_shifts),
-            }, status: 200
-        }
-        render response
+  def create
+    shifts_to_create = []
+    response = { json: { error: 'No se pudieron crear turnos', status: 400 } }
+    if !params[:shifts].select { |shift| !shift.blank? }.blank?
+      params[:shifts].each do |shift|
+        shifts_to_create << Shift.new(shift_params(shift))
+      end
+    else
+      response = { json: { message: 'empty params', status: 200 } }
     end
+    unless shifts_to_create.blank?
+      shifts_to_create.each { |shift| shift.save }
+      response = {
+        json: {
+          shifts: ApiHelper.api_response_normalization(shifts_to_create)
+        }, status: 201
+      }
+    end
+    render response
+  end
 
-    private 
-    def shift_params shift
-        shift.permit(:service_id, :week_id, :day, :start_time, :end_time)
+  def availabilities
+    # sa: shift_availability
+    # sas: shift_availabilities
+    sas_to_create = []
+    response = { json: { error: 'No se pudieron crear turnos', status: 400 } }
+    if !params[:sas].reject(&:blank?).blank?
+      params[:sas].each do |sa|
+        sas_to_create << ShiftAvailability.find_or_create_by(shift_availabilities_params(sa))
+      end
+    else
+      response = { json: { message: 'empty params', status: 200 } }
     end
-    def shift_availabilities_params shift_availability
-        shift_availability.permit(:employee_id, :shift_id)
+    if !params[:sas_to_destroy].blank?
+      sas_to_destroy = ShiftAvailability.where(
+        employee_id: params[:sas_to_destroy].map(&:employee_id), 
+        shift_id: params[:sas_to_destroy].map(&:shift_id)
+        )
+      sas_to_destroy.destroy_all
     end
+    unless sas_to_create.blank?
+      response = {
+        json: {
+          shift_availabilities: ApiHelper.api_response_normalization(sas_to_create)
+        }, status: 201
+      }
+    end
+    render response
+  end
+
+  def distribute
+    response = { json: { error: 'No se pudieron distribuir los turnos' }, status: 400 }
+    distribuited_shifts = DistributionService.distribute(params)
+    unless distribuited_shifts.blank?
+      shifts = Shift.where(service_id: distribuited_shifts[0].service_id, week_id: distribuited_shifts[0].week_id)
+      response = {
+        json: {
+          shifts: ApiHelper.api_response_normalization(shifts)
+        }, status: 200
+      }
+    end
+    render response
+  end
+
+  private
+
+  def shift_params(shift)
+    shift.permit(:service_id, :week_id, :day, :start_time, :end_time)
+  end
+
+  def shift_availabilities_params(shift_availability)
+    shift_availability.permit(:employee_id, :shift_id)
+  end
 end

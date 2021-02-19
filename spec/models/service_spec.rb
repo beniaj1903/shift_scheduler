@@ -2,7 +2,9 @@ require 'rails_helper'
 
 RSpec.describe Service, type: :model do
   describe 'attributes' do
-    let!(:services) { [Service.create(name: 'Move SPA'), Service.create(name: 'Ben EIRL'), Service.create(name: 'NYC Gas CO')] }
+    let!(:services) do
+      [Service.create(name: 'Move SPA'), Service.create(name: 'Ben EIRL'), Service.create(name: 'NYC Gas CO')]
+    end
     it 'uses match array to match a scope' do
       expect(Service.all).to match_array(services)
     end

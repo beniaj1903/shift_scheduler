@@ -1,3 +1,3 @@
 class Week < ApplicationRecord
-    has_many :shifts
+  has_many :shifts
 end
