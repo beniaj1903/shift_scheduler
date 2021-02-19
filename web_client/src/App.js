@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 
 // project
-import './Apps.css';
+// import './Apps.css';
 import { apiGet } from './Utils/ApiFetch'
 
 // END IMPORTS
@@ -34,11 +34,14 @@ const App = () => {
   };
 
   const [state, setState] = useState(initialState);
+  const [error, setError] = useState('');
 
   // Did Mount
-  useEffect(() => {
-    const response = apiGet('shifts', {});
+  useEffect(async () => {
+    const response = await apiGet('shifts', {});
+    console.log("response", response)
     if (response.status && response.status < 300) {
+      console.log('response.viewState', response.viewState)
       setState({ viewState: response.viewState });
     } else {
       setError({ error: response.error });
@@ -48,10 +51,10 @@ const App = () => {
   useEffect(() => {
     
   }, []);
-
+  console.log("state", state)
   return (
 
-    <div className="App">
+    <div>
 
     </div>
   );

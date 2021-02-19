@@ -5,7 +5,12 @@ export async function apiGet(endpoint, options) {
     try {
         const res = await fetch(`${apiUrl}/${endpoint}`, options);
         const json = await res.json();
-        return json;
+        console.log('json', json)
+        console.log('res', )
+        return {
+            viewState: json,
+            status: res.status
+        };
     } catch (error) {
         return error;
     }
