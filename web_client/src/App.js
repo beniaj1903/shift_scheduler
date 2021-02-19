@@ -68,8 +68,9 @@ const App = () => {
 
   function handleEmployeeCheckboxChange(employeeId, shiftIds, checked) {
     const newEmployeeShiftAvailabilities = shiftIds.map(id => ({ employee_id: employeeId, shift_id: id }));
+    const controlsAvailabilities = state.controls.availabilities.filter(sa =>!(sa.employee_id === employeeId && shiftIds.includes(sa.shift_id)));
     const newAvailabilities = checked ?
-      [...state.controls.availabilities, ...newEmployeeShiftAvailabilities] :
+      [...controlsAvailabilities, ...newEmployeeShiftAvailabilities] :
       state.controls.availabilities.filter(sa => !(sa.employee_id === employeeId && shiftIds.includes(sa.shift_id)));
     setState({
       ...state,
@@ -165,7 +166,6 @@ const App = () => {
   }, [serviceId, weekId]);
 
   useEffect(() => {
-    console.log('HEEEEEEEEEEEEEEEEREEEEEEEEEEEE', "HEEEEEEEEEEEEEEEEREEEEEEEEEEEE")
     setState({ ...state, controls: { ...state.controls, availabilities: Object.values(shift_availabilities) } });
   }, [shift_availabilities]);
 

@@ -1,7 +1,14 @@
 module DistributionService
     def self.distribute params
       distribuited_shifts = []
-      shift_availabilities = ShiftAvailability.where(employee_id: params[:employee_ids].map{ |id| id.to_i }, shift_id: params[:shift_ids].map{ |id| id.to_i })
+      ordered_shifts = Shift
+        .where(id: params[:shift_ids].map{|id| id.to_i})
+        .joins("LEFT JOIN weeks ON weeks.id = shifts.week_id")
+        .select("shifts.*", "weeks.year as w_year", "weeks.number as w_number")
+        .order(:w_year,:w_number,:day)
+        .map(&:id)
+      shift_availabilities = ShiftAvailability
+        .where(employee_id: params[:employee_ids].map{|id| id.to_i}, shift_id: ordered_shifts)
         .select("COUNT(*) as availabilities_count", "employee_id", "group_concat(CAST(shift_availabilities.shift_id AS varchar), '-') as shift_ids")
         .group(:employee_id)
         .order(:availabilities_count)

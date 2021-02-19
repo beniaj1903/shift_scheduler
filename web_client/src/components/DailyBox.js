@@ -13,7 +13,7 @@ import { Warning } from "@material-ui/icons";
 
 // project imports
 import { formatTime } from "../Utils/DateHelper";
-
+import { ok, warning, checkboxColor, employeeColors } from '../Utils/Colors'
 /* 
     Component
     Name: DailyBox
@@ -44,14 +44,20 @@ const DailyBox = props => {
             <Table aria-label="simple table">
                 <TableHead>
                     <TableRow>
-                        <TableCell align="center" colSpan={checkboxMode ? 1 : 2}>{day}</TableCell>
+                        <TableCell align="center" colSpan={checkboxMode ? 1 : 2} >{day}</TableCell>
                         {checkboxMode &&
                             employees.map(employee => {
                                 const employeeAvailabilities = availabilities.filter(sa => sa.employee_id === employee.id);
                                 const allChecked = employeeAvailabilities.length === shiftIds.length;
-                                return <TableCell colSpan={1} align="center" key={employee.id}>
+                                if (day === 'Wed Mar 24 2021') {
+                                    console.log('day', day)
+                                    console.log('shiftIds', shiftIds)
+                                    console.log('employeeAvailabilities', employeeAvailabilities)
+                                }
+                                return <TableCell colSpan={1} align="center" key={employee.id} style={{ backgroundColor: employeeColors(employees, employee.id)}}>
                                     <Checkbox
                                         checked={Boolean(allChecked)}
+                                        color="default"
                                         onChange={() => handleEmployeeCheckboxChange(employee.id, shiftIds, !Boolean(allChecked))}
                                     />
                                     {employee.name}
@@ -62,7 +68,11 @@ const DailyBox = props => {
                 <TableBody>
                     {rows.map((row) => (
                         <TableRow key={row.id}>
-                            <TableCell align="center">{`${formatTime(row.start_time)}-${formatTime(row.end_time)}`}</TableCell>
+                            <TableCell align="center"
+                                style={{ backgroundColor: row.employee_id ? ok : warning }}
+                            >
+                                {`${formatTime(row.start_time)}-${formatTime(row.end_time)}`}
+                            </TableCell>
                             {
                                 checkboxMode ?
                                     employees.map(employee => {
@@ -70,11 +80,12 @@ const DailyBox = props => {
                                         return <TableCell key={employee.id}>
                                             <Checkbox
                                                 checked={Boolean(checked)}
+                                                color="default"
                                                 onChange={() => handleCheckboxChange(employee.id, row.id, !Boolean(checked))}
                                             />
                                         </TableCell>
                                     })
-                                    : <TableCell align="center">{
+                                    : <TableCell align="center" style={{ backgroundColor: employeeColors(employees, row.employee_id)}} >{
                                         row.employee === '' ? <Warning /> : row.employee
                                     }
                                     </TableCell>
