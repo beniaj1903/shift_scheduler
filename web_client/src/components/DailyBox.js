@@ -12,6 +12,7 @@ import {
 import { Warning } from "@material-ui/icons";
 
 // project imports
+import '../App.css'
 import { formatTime } from "../Utils/DateHelper";
 import { ok, warning, checkboxColor, employeeColors } from '../Utils/Colors'
 /* 
@@ -40,7 +41,7 @@ const DailyBox = props => {
 
     // Render
     return (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} className="Daily-box">
             <Table aria-label="simple table">
                 <TableHead>
                     <TableRow>
@@ -49,11 +50,6 @@ const DailyBox = props => {
                             employees.map(employee => {
                                 const employeeAvailabilities = availabilities.filter(sa => sa.employee_id === employee.id);
                                 const allChecked = employeeAvailabilities.length === shiftIds.length;
-                                if (day === 'Wed Mar 24 2021') {
-                                    console.log('day', day)
-                                    console.log('shiftIds', shiftIds)
-                                    console.log('employeeAvailabilities', employeeAvailabilities)
-                                }
                                 return <TableCell colSpan={1} align="center" key={employee.id} style={{ backgroundColor: employeeColors(employees, employee.id)}}>
                                     <Checkbox
                                         checked={Boolean(allChecked)}

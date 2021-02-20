@@ -56,21 +56,32 @@ class Api::V1::ShiftsController < Api::V1::ApiController
     # sas: shift_availabilities
     sas_to_create = []
     response = { json: { error: 'No se pudieron crear turnos', status: 400 } }
+    if params[:service_id].blank?
+      service_id = Service.first.id
+      if params[:week_id].blank?
+        week_id = Week.first.id
+      else
+        week_id = params[:week_id].to_i
+      end
+    elsif params[:week_id].blank?
+      week_id = Week.first.id
+      service_id = params[:service_id].to_i
+    else
+      service_id = params[:service_id].to_i
+      week_id = params[:week_id].to_i
+    end
+    sas_to_destroy = Shift.where(service_id: service_id, week_id: week_id)
+    sas_to_destroy = ShiftAvailability.where(shift_id: sas_to_destroy.map(&:id))
+    sas_to_destroy.destroy_all
     if !params[:sas].reject(&:blank?).blank?
       params[:sas].each do |sa|
-        sas_to_create << ShiftAvailability.find_or_create_by(shift_availabilities_params(sa))
+        sas_to_create << ShiftAvailability.new(shift_availabilities_params(sa))
       end
     else
       response = { json: { message: 'empty params', status: 200 } }
     end
-    if !params[:sas_to_destroy].blank?
-      sas_to_destroy = ShiftAvailability.where(
-        employee_id: params[:sas_to_destroy].map(&:employee_id), 
-        shift_id: params[:sas_to_destroy].map(&:shift_id)
-        )
-      sas_to_destroy.destroy_all
-    end
     unless sas_to_create.blank?
+      sas_to_create.each(&:save)
       response = {
         json: {
           shift_availabilities: ApiHelper.api_response_normalization(sas_to_create)

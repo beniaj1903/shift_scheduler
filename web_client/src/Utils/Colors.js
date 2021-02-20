@@ -13,6 +13,9 @@ export const warning = red[300];
 export const checkboxColor = grey[300];
 
 export const employeeColors = (employees, employeeId) => {
+    if (employeeId === 0) {
+        return grey[500];
+    }
     const colorArray = [
         lime[300],
         purple[300],
